@@ -22,10 +22,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * ============================================================================
- * NETFLIX VIEWING SESSION ANALYZER - INTERN LEARNING EDITION
- * ============================================================================
- * 
  * This Flink job demonstrates the "Merge Intervals" problem at SCALE.
  * 
  * On LeetCode, you merge intervals in a sorted array in one place.
@@ -40,10 +36,9 @@ public class ViewingSessionJob {
     
     public static void main(String[] args) throws Exception {
         // Step 1: Create the Flink execution environment
-        // Think of this as "booting up" your distributed processing engine
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         
-        // CRITICAL CHANGE: Parallelism of 5 means 5 parallel tasks
+        // Parallelism of 5 means 5 parallel tasks
         // With 3 TaskManagers (2 slots each = 6 total slots), we can run 5 parallel instances
         // This distributes our 5 users across the 3 TaskManagers!
         env.setParallelism(5);
@@ -52,7 +47,8 @@ public class ViewingSessionJob {
         
         // Step 2: Create a Kafka source to read viewing events
         System.out.println("🔌 Setting up Kafka source...");
-        KafkaSource<String> source = KafkaSource.<String>builder()
+        KafkaSource<String> source = KafkaSource
+            .<String>builder()
             .setBootstrapServers("kafka:29092")  // Connect to our Kafka broker
             .setTopics("viewing-events")          // Read from the viewing-events topic
             .setGroupId("flink-session-analyzer") // Consumer group (for Kafka offset tracking)
@@ -63,7 +59,7 @@ public class ViewingSessionJob {
         // Step 3: Create the data stream from Kafka
         DataStream<String> rawEvents = env.fromSource(
             source,
-            WatermarkStrategy.<String>forBoundedOutOfOrderness(Duration.ofSeconds(5))
+            WatermarkStrategy.<String>forBoundedOutOfOrderness(Duration.ofSeconds(5)) // Handle out-of-order events upto 5 seconds
                 .withIdleness(Duration.ofSeconds(30)),
             "Kafka Source"
         );
@@ -192,7 +188,7 @@ public class ViewingSessionJob {
             
             if (session == null) {
                 // No active session - START A NEW ONE!
-                System.out.println("🟢 [" + taskManagerId + "] NEW SESSION for: " + event.userId);
+                System.out.println("[" + taskManagerId + "] NEW SESSION for: " + event.userId);
                 
                 session = new ViewingSession();
                 session.userId = event.userId;
@@ -319,7 +315,7 @@ public class ViewingSessionJob {
                 
                 return event;
             } catch (Exception e) {
-                System.err.println("❌ Failed to parse JSON: " + json);
+                System.err.println("Failed to parse JSON: " + json);
                 throw new RuntimeException(e);
             }
         }
@@ -362,13 +358,13 @@ public class ViewingSessionJob {
         public String toHumanReadable() {
             switch (eventType) {
                 case "SESSION_START":
-                    return String.format("🟢 [%s] %s started watching %s", 
+                    return String.format("[%s] %s started watching %s", 
                                        taskManager, userId, showName);
                 case "HEARTBEAT":
-                    return String.format("💓 [%s] %s: %d heartbeats", 
+                    return String.format("[%s] %s: %d heartbeats", 
                                        taskManager, userId, heartbeatCount);
                 case "SESSION_END":
-                    return String.format("🎬 [%s] %s watched %s for %d seconds (%d heartbeats)", 
+                    return String.format("[%s] %s watched %s for %d seconds (%d heartbeats)", 
                                        taskManager, userId, showName, durationSeconds, heartbeatCount);
                 default:
                     return eventType;

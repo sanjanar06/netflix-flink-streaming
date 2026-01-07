@@ -1,10 +1,6 @@
 """
 The "TV" - Netflix Data Generator
 ==================================
-This simulates MULTIPLE users watching Netflix simultaneously.
-This is KEY to seeing distributed processing in action!
-
-WHY MULTIPLE USERS?
 In a distributed system, different users are processed by different workers.
 With multiple users, you'll see:
 - Users being distributed across 3 TaskManagers
@@ -25,12 +21,6 @@ KAFKA_BOOTSTRAP_SERVERS = os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092')
 KAFKA_TOPIC = os.getenv('KAFKA_TOPIC', 'viewing-events')
 
 def create_producer():
-    """
-    Create a Kafka producer that can send messages to our Kafka broker.
-    
-    LEARNING NOTE: The producer connects to Kafka and can send messages to topics.
-    Think of it like addressing an envelope - the topic is the destination.
-    """
     print(f"🔌 Connecting to Kafka at {KAFKA_BOOTSTRAP_SERVERS}...")
     producer = KafkaProducer(
         bootstrap_servers=KAFKA_BOOTSTRAP_SERVERS,
@@ -39,15 +29,10 @@ def create_producer():
         retries=10,
         retry_backoff_ms=1000
     )
-    print("✅ Connected to Kafka successfully!")
+    print("Connected to Kafka successfully!")
     return producer
 
 def send_heartbeat(producer, user_id, show_name):
-    """
-    Send a single heartbeat event to Kafka.
-    
-    This represents: "Hey, user Erin is still watching at this moment."
-    """
     event = {
         "user_id": user_id,
         "show": show_name,
@@ -56,10 +41,9 @@ def send_heartbeat(producer, user_id, show_name):
     }
     
     producer.send(KAFKA_TOPIC, value=event)
-    
     # Format the timestamp for readability
     readable_time = datetime.fromtimestamp(event['timestamp'] / 1000).strftime('%H:%M:%S')
-    print(f"📺 [{readable_time}] {user_id} watching {show_name}")
+    print(f"[{readable_time}] {user_id} watching {show_name}")
     
     return event
 
@@ -79,14 +63,11 @@ def simulate_viewing_session():
     producer = create_producer()
     
     print("\n" + "="*80)
-    print("🎬 STARTING DISTRIBUTED NETFLIX VIEWING SIMULATION")
+    print(" STARTING DISTRIBUTED NETFLIX VIEWING SIMULATION")
     print("="*80)
-    print("\n📖 What you'll see:")
     print("   - 5 USERS watching simultaneously")
     print("   - Flink's keyBy() will route each user to a TaskManager")
     print("   - Different session patterns per user")
-    print("\n🎯 Goal: See how Flink distributes work across 3 TaskManagers!")
-    print("\n⏰ Watch the visualization at http://localhost:5001\n")
     
     # Define our users and their shows
     users = [
@@ -110,24 +91,24 @@ def simulate_viewing_session():
             time.sleep(start_delay)
             
             # SESSION 1
-            print(f"\n🟢 {user_id} started watching {show}")
+            print(f"\n{user_id} started watching {show}")
             for i in range(num_heartbeats):
                 send_heartbeat(producer, user_id, show)
                 time.sleep(1)
             
-            print(f"\n⏸️  {user_id} paused for {pause_duration} seconds")
+            print(f"\n⏸{user_id} paused for {pause_duration} seconds")
             time.sleep(pause_duration)
             
             # SESSION 2
-            print(f"\n🟢 {user_id} resumed watching {show}")
+            print(f"\n{user_id} resumed watching {show}")
             for i in range(num_heartbeats):
                 send_heartbeat(producer, user_id, show)
                 time.sleep(1)
             
-            print(f"\n✅ {user_id} finished watching")
+            print(f"\n{user_id} finished watching")
             
         except Exception as e:
-            print(f"❌ Error for {user_id}: {e}")
+            print(f"Error for {user_id}: {e}")
     
     try:
         # Start a thread for each user - they all watch simultaneously!
@@ -141,18 +122,18 @@ def simulate_viewing_session():
         for thread in threads:
             thread.join()
         
-        print("\n\n🏁 All users finished! Waiting for final sessions to close...")
+        print("\n\n All users finished! Waiting for final sessions to close...")
         time.sleep(35)
         
     except KeyboardInterrupt:
-        print("\n\n⏹️  Stopped by user")
+        print("\n\n  Stopped by user")
     finally:
         producer.close()
-        print("👋 Generator shut down cleanly")
+        print("Generator shut down cleanly")
 
 if __name__ == "__main__":
     # Wait a moment to ensure Kafka is fully ready
-    print("⏳ Waiting for Kafka to be ready...")
+    print("Waiting for Kafka to be ready...")
     time.sleep(5)
     
     simulate_viewing_session()

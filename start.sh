@@ -27,8 +27,8 @@ echo "✅ Flink job built successfully!"
 echo ""
 
 # Start infrastructure
-echo "🚀 Starting infrastructure (Kafka, Zookeeper, Flink)..."
-docker-compose up -d zookeeper kafka jobmanager taskmanager
+echo "🚀 Starting infrastructure (Kafka, Zookeeper, Flink cluster)..."
+docker-compose up -d zookeeper kafka jobmanager taskmanager-1 taskmanager-2 taskmanager-3 visualization
 echo "⏳ Waiting 30 seconds for services to be ready..."
 sleep 30
 echo "✅ Infrastructure is ready!"
@@ -39,20 +39,26 @@ echo "📤 Submitting Flink job..."
 docker cp flink-job/target/viewing-session-analyzer-1.0-SNAPSHOT.jar jobmanager:/tmp/
 docker exec -d jobmanager flink run /tmp/viewing-session-analyzer-1.0-SNAPSHOT.jar
 echo "✅ Flink job submitted!"
-echo "   View at: http://localhost:8081"
 echo ""
 
 # Start data generator
-echo "📺 Starting data generator..."
+echo "📺 Starting data generator (5 users)..."
 docker-compose up -d data-generator
 echo "✅ Generator started!"
 echo ""
 
 echo "🎉 Everything is running!"
 echo ""
-echo "Next steps:"
-echo "  1. Open Flink UI: http://localhost:8081"
-echo "  2. Watch the logs: docker logs -f taskmanager"
-echo "  3. Wait ~90 seconds to see both sessions complete"
+echo "📊 VISUALIZATION DASHBOARD: http://localhost:5001"
+echo "   ↑ Open this to see distributed processing in real-time!"
+echo ""
+echo "Other monitoring:"
+echo "  • Flink UI: http://localhost:8081"
+echo "  • TaskManager logs: docker logs -f taskmanager-1"
+echo ""
+echo "What to expect:"
+echo "  • 5 users distributed across 3 TaskManagers"
+echo "  • Two sessions per user (with ~40s gap between)"
+echo "  • Total runtime: ~2 minutes"
 echo ""
 echo "To stop everything: docker-compose down"
